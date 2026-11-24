@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha Ordem Paranormal</title>
+<style>
+  :root{
+    --bg:#16131c; --panel:#1f1b28; --line:#352f44; --text:#e8e4d8; --muted:#9a94a8;
+    --pv:#c23a43; --pe:#9b6bd1; --san:#5b8bd6; --acc:#d9b45a;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-size:14px}
+  input,select,button,textarea{font:inherit;color:inherit}
+  input,select{background:#120f18;border:1px solid var(--line);border-radius:4px;padding:5px 7px;min-width:0;width:100%}
+  input[type=checkbox]{width:auto}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  button{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+  button:hover{border-color:var(--acc)}
+  header{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:3}
+  header select{flex:1}
+  main{padding:0 10px 30px}
+  .tabs{display:flex;gap:4px;position:sticky;top:53px;background:var(--bg);padding:8px 0;z-index:2}
+  .tabs button{flex:1;border-radius:14px}
+  .tabs button.on{border-color:var(--acc);color:var(--acc)}
+  .row{display:flex;gap:6px;margin-bottom:8px}
+  .row>*{flex:1}
+  h2{font-size:15px;margin:16px 0 6px;color:var(--acc);font-weight:normal;border-bottom:1px solid var(--line);padding-bottom:4px}
+  .attrs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .attr{background:var(--panel);border:1px solid var(--line);border-radius:6px;text-align:center;padding:6px 2px}
+  .attr b{display:block;font-size:12px;color:var(--muted);font-weight:normal}
+  .attr input{width:46px;text-align:center;font-size:20px;margin:3px 0;padding:2px}
+  .attr button{width:100%;border:0;border-top:1px solid var(--line);border-radius:0;background:none;font-size:12px;color:var(--muted);padding:4px 0 0}
+  .bars{display:grid;gap:6px}
+  .bar{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center}
+  .bar label{color:var(--muted)}
+  .track{height:18px;background:#120f18;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+  .fill{height:100%;transition:width .2s}
+  .nums{display:flex;gap:3px;align-items:center}
+  .nums input{width:46px;text-align:center}
+  .nums button{padding:4px 8px}
+  .skill{display:grid;grid-template-columns:1fr 62px 52px 62px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px dotted var(--line)}
+  .skill small{color:var(--muted)}
+  .skill select,.skill input{padding:3px}
+  .skill button{padding:3px 4px;font-weight:bold}
+  .skillhead{color:var(--muted);font-size:12px}
+  textarea{width:100%;min-height:70px;background:#120f18;border:1px solid var(--line);border-radius:4px;padding:6px;resize:vertical}
+  .empty{text-align:center;color:var(--muted);padding:30px 16px;line-height:1.5}
+  .hint{color:var(--muted);font-size:12px}
+  .log{margin-top:6px;padding:8px;background:var(--panel);border-radius:6px;border-left:3px solid var(--acc);min-height:20px}
+  .wide{width:100%;margin-top:6px}
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px}
+  .ihead{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .ihead small{color:var(--muted)}
+  .acts{display:flex;gap:6px;margin:8px 0}
+  .acts button{flex:1}
+  .acts .main{border-color:var(--acc)}
+  summary{cursor:pointer;color:var(--muted);padding:4px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+  .fl{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
+  .full{grid-column:1/-1}
+  .mel{display:grid;grid-template-columns:auto 1fr 58px 1fr auto;gap:5px;align-items:center;margin-bottom:5px}
+  .mel.rit{grid-template-columns:auto 1fr 50px 1fr auto}
+  .meldesc{grid-column:2/-1}
+  .danger{color:var(--pv)}
+</style>
+</head>
+<body>
+<header>
+  <select id="sel" aria-label="Escolher ficha"></select>
+  <button id="new">Nova ficha</button>
+</header>
+<main id="main"></main>
+
+<script type="module">
+import OBR from "https://esm.sh/@owlbear-rodeo/sdk@3";
+
+const KEY = "com.ficha-op/fichas";
+const CHANNEL = "com.ficha-op/rolagem";
+const ATTRS = ["AGI","FOR","INT","PRE","VIG"];
+const SKILLS = [
+  ["Acrobacia","AGI"],["Adestramento","PRE"],["Artes","PRE"],["Atletismo","FOR"],["Atualidades","INT"],
+  ["Ciências","INT"],["Crime","AGI"],["Diplomacia","PRE"],["Enganação","PRE"],["Fortitude","VIG"],
+  ["Furtividade","AGI"],["Iniciativa","AGI"],["Intimidação","PRE"],["Intuição","PRE"],["Investigação","INT"],
+  ["Luta","FOR"],["Medicina","INT"],["Ocultismo","INT"],["Percepção","PRE"],["Pilotagem","AGI"],
+  ["Pontaria","AGI"],["Profissão","INT"],["Reflexos","AGI"],["Religião","PRE"],["Sobrevivência","INT"],
+  ["Tática","INT"],["Tecnologia","INT"],["Vontade","PRE"]
+];
+const TREINO = [["Destreinado",0],["Treinado",5],["Veterano",10],["Expert",15]];
+const ELEMENTOS = ["Sangue","Morte","Conhecimento","Energia","Medo"];
+
+let fichas = {}, current = null, myId = "", role = "PLAYER", saveTimer = null;
+let tab = "ficha";
+const openIds = new Set();
+
+const $ = s => document.querySelector(s);
+const main = $("#main");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = v => Number.isFinite(parseInt(v)) ? parseInt(v) : 0;
+const uid = () => crypto.randomUUID();
+const d = n => 1 + Math.floor(Math.random() * Math.max(1, n));
+
+function blank(){
+  return normalize({
+    id: uid(), owner: myId, nome: "Novo agente", origem: "", classe: "", nex: 5,
+    attrs: {AGI:1,FOR:1,INT:1,PRE:1,VIG:1},
+    pv:[10,10], pe:[2,2], san:[12,12], defesa:10, desloc:"9m", pericias:{}, notas:""
+  });
+}
+function normalize(f){ f.armas ??= []; f.rituais ??= []; f.pericias ??= {}; return f; }
+const newArma = () => ({id:uid(), nome:"Nova arma", tipo:"", pericia:"Luta", dano:"1d6", critMargem:20, critMult:2, alcance:"", tipoDano:"", notas:"", melhorias:[]});
+const newRitual = () => ({id:uid(), nome:"Novo ritual", circulo:1, elemento:"Conhecimento", execucao:"Padrão", alcance:"Curto", alvo:"", duracao:"", resistencia:"", custo:1, dano:"", descricao:"", melhorias:[]});
+const newMelArma = () => ({id:uid(), nome:"Melhoria", ativa:true, bonusAtq:0, danoExtra:""});
+const newMelRit = () => ({id:uid(), nome:"Discente", ativa:false, custo:2, danoExtra:"", descricao:""});
+
+/* ---------- Armazenamento ---------- */
+async function load(){
+  const meta = await OBR.room.getMetadata();
+  fichas = meta[KEY] || {};
+  Object.values(fichas).forEach(normalize);
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+async function saveNow(){
+  const f = fichas[current]; if(!f) return;
+  try{
+    const meta = await OBR.room.getMetadata();
+    await OBR.room.setMetadata({[KEY]: {...(meta[KEY] || {}), [f.id]: f}});
+  }catch(err){
+    OBR.notification.show("Não foi possível salvar: a sala atingiu o limite de 16 KB. Exclua fichas antigas.", "ERROR");
+  }
+}
+async function removeFicha(id){
+  const meta = await OBR.room.getMetadata();
+  const all = {...(meta[KEY] || {})}; delete all[id];
+  await OBR.room.setMetadata({[KEY]: all});
+}
+const canEdit = f => role === "GM" || f.owner === myId;
+const visible = () => Object.values(fichas).filter(f => role === "GM" || f.owner === myId);
+
+/* ---------- Rolagens ---------- */
+function rollTerms(expr, mult = 1){
+  const parts = String(expr).replace(/\s/g,"").replace(/-/g,"+-").split("+").filter(Boolean);
+  if(!parts.length) return null;
+  let total = 0; const det = [];
+  for(const p of parts){
+    const m = p.match(/^(-?)(\d*)d(\d+)$/i);
+    if(m){
+      const sign = m[1] ? -1 : 1;
+      const q = Math.min((num(m[2]) || 1) * mult, 100), faces = num(m[3]);
+      const r = Array.from({length:q}, () => d(faces));
+      total += sign * r.reduce((a,b)=>a+b,0);
+      det.push(`${m[1]}${q}d${faces}[${r.join(",")}]`);
+    } else if(/^-?\d+$/.test(p)){ total += num(p); det.push(p); }
+    else return null;
+  }
+  return {total, text: det.join(" + ")};
+}
+function rollD20(f, attr, bonus){
+  const n = f.attrs[attr];
+  const dados = Array.from({length: n > 0 ? n : 2}, () => d(20));
+  const nat = n > 0 ? Math.max(...dados) : Math.min(...dados);
+  return {dados, nat, total: nat + bonus};
+}
+function rollPericia(f, nome){
+  const attr = SKILLS.find(s => s[0] === nome)?.[1] || "FOR";
+  const p = f.pericias[nome] || {t:0,o:0};
+  return {attr, bonus: p.t + p.o};
+}
+function rollAttr(f, label, attr, bonus){
+  const r = rollD20(f, attr, bonus);
+  const crit = r.nat === 20 ? " (20 natural!)" : r.nat === 1 ? " (1 natural)" : "";
+  announce(`${f.nome} — ${label}: [${r.dados.join(", ")}] → ${r.nat}${bonus ? " + " + bonus : ""} = ${r.total}${crit}`);
+}
+function rollFormula(f, txt){
+  const r = rollTerms(txt);
+  if(!r){ show("Use o formato 2d6+3"); return; }
+  announce(`${f.nome} — ${txt}: ${r.text} = ${r.total}`);
+}
+const ativas = item => (item.melhorias || []).filter(m => m.ativa);
+const juntar = (...xs) => xs.filter(x => x && String(x).trim()).join("+");
+
+function atacar(f, a){
+  const {attr, bonus: base} = rollPericia(f, a.pericia);
+  const bonus = base + ativas(a).reduce((s,m) => s + num(m.bonusAtq), 0);
+  const r = rollD20(f, attr, bonus);
+  const crit = r.nat >= num(a.critMargem || 20);
+  announce(`${f.nome} ataca com ${a.nome} (${a.pericia}): [${r.dados.join(", ")}] → ${r.nat}${bonus ? " + " + bonus : ""} = ${r.total}${crit ? " — CRÍTICO!" : ""}`);
+}
+function danoArma(f, a, crit){
+  const expr = juntar(a.dano, ...ativas(a).map(m => m.danoExtra));
+  const mult = crit ? Math.max(1, num(a.critMult || 2)) : 1;
+  const r = rollTerms(expr, mult);
+  if(!r){ show(`Fórmula de dano inválida: ${expr}`); return; }
+  announce(`${f.nome} — dano de ${a.nome}${crit ? ` (crítico x${mult})` : ""}: ${r.text} = ${r.total} ${a.tipoDano || ""}`);
+}
+function custoRitual(r){ return num(r.custo) + ativas(r).reduce((s,m) => s + num(m.custo), 0); }
+function conjurar(f, r){
+  const custo = custoRitual(r);
+  if(f.pe[0] < custo){ show(`PE insuficiente para ${r.nome}: você tem ${f.pe[0]} e precisa de ${custo}.`); return; }
+  f.pe[0] -= custo; scheduleSave();
+  const ms = ativas(r).map(m => m.nome);
+  announce(`${f.nome} conjura ${r.nome} (${custo} PE${ms.length ? ", " + ms.join(", ") : ""})${r.resistencia ? " — Resistência: " + r.resistencia : ""}`);
+  render();
+}
+function danoRitual(f, r){
+  const expr = juntar(r.dano, ...ativas(r).map(m => m.danoExtra));
+  const x = rollTerms(expr);
+  if(!x){ show(`Fórmula de dano inválida: ${expr}`); return; }
+  announce(`${f.nome} — dano de ${r.nome}: ${x.text} = ${x.total}`);
+}
+function show(msg){ const l = $("#log"); if(l) l.textContent = msg; OBR.notification.show(msg); }
+async function announce(msg){
+  show(msg);
+  await OBR.broadcast.sendMessage(CHANNEL, msg, {destination: "REMOTE"});
+}
+
+/* ---------- Interface: ficha ---------- */
+function renderSelect(){
+  const list = visible();
+  $("#sel").innerHTML = list.length
+    ? list.map(f => `<option value="${f.id}" ${f.id===current?"selected":""}>${esc(f.nome)}</option>`).join("")
+    : `<option>Nenhuma ficha</option>`;
+}
+
+function viewFicha(f, ro){
+  const bar = (k, label, cor) => `
+    <div class="bar">
+      <label>${label}</label>
+      <div class="track"><div class="fill" style="width:${f[k][1] ? Math.max(0,Math.min(100,f[k][0]/f[k][1]*100)) : 0}%;background:${cor}"></div></div>
+      <div class="nums">
+        <button data-adj="${k}:-1" ${ro} aria-label="Diminuir ${label}">−</button>
+        <input type="number" data-cur="${k}" value="${f[k][0]}" ${ro} aria-label="${label} atual">/
+        <input type="number" data-max="${k}" value="${f[k][1]}" ${ro} aria-label="${label} máximo">
+        <button data-adj="${k}:1" ${ro} aria-label="Aumentar ${label}">+</button>
+      </div>
+    </div>`;
+  const kb = (JSON.stringify(fichas).length / 1024).toFixed(1);
+  return `
+    <div class="row"><input data-f="nome" value="${esc(f.nome)}" placeholder="Nome" ${ro}></div>
+    <div class="row">
+      <input data-f="origem" value="${esc(f.origem)}" placeholder="Origem" ${ro}>
+      <input data-f="classe" value="${esc(f.classe)}" placeholder="Classe" ${ro}>
+      <input data-f="nex" type="number" value="${f.nex}" placeholder="NEX %" ${ro}>
+    </div>
+
+    <h2>Atributos</h2>
+    <div class="attrs">
+      ${ATTRS.map(a => `
+        <div class="attr"><b>${a}</b>
+          <input type="number" min="0" max="9" data-attr="${a}" value="${f.attrs[a]}" ${ro} aria-label="${a}">
+          <button data-rollattr="${a}">rolar</button>
+        </div>`).join("")}
+    </div>
+
+    <h2>Condição</h2>
+    <div class="bars">${bar("pv","PV","var(--pv)")}${bar("pe","PE","var(--pe)")}${bar("san","SAN","var(--san)")}</div>
+    <div class="row" style="margin-top:8px">
+      <label class="fl">Defesa <input type="number" data-f="defesa" value="${f.defesa}" ${ro}></label>
+      <label class="fl">Deslocamento <input data-f="desloc" value="${esc(f.desloc)}" ${ro}></label>
+    </div>
+
+    <h2>Perícias</h2>
+    <div class="skill skillhead"><span>Perícia</span><span>Treino</span><span>Outros</span><span></span></div>
+    ${SKILLS.map(([nome, attr]) => {
+      const p = f.pericias[nome] || {t:0, o:0};
+      return `<div class="skill">
+        <span>${nome} <small>${attr}</small></span>
+        <select data-treino="${nome}" ${ro}>${TREINO.map(([l,v]) => `<option value="${v}" ${p.t===v?"selected":""}>${v ? "+"+v : "—"}</option>`).join("")}</select>
+        <input type="number" data-outros="${nome}" value="${p.o}" ${ro} aria-label="Bônus extra de ${nome}">
+        <button data-rollskill="${nome}">d20</button>
+      </div>`;
+    }).join("")}
+
+    <h2>Rolagem livre</h2>
+    <div class="row">
+      <input id="formula" placeholder="2d6+3" value="1d20">
+      <button id="rollf" style="flex:0 0 80px">Rolar</button>
+    </div>
+    <div class="log" id="log">Os resultados também aparecem para os outros jogadores.</div>
+
+    <h2>Anotações</h2>
+    <textarea data-f="notas" ${ro} placeholder="Inventário, contatos, pistas...">${esc(f.notas)}</textarea>
+
+    <h2>Backup</h2>
+    <textarea id="bk" placeholder="Exportar mostra o código da ficha aqui. Para importar, cole o código e toque em Importar."></textarea>
+    <div class="row" style="margin-top:6px">
+      <button data-act="export">Exportar</button>
+      <button data-act="import">Importar</button>
+      ${canEdit(f) ? `<button data-act="delficha" class="danger">Excluir ficha</button>` : ""}
+    </div>
+    <p class="hint">Espaço da sala usado: ${kb} de 16 KB. Fichas com muitas armas e rituais ocupam mais.</p>
+    <p class="hint">Perícias: rola um d20 por ponto do atributo e fica com o maior. Com atributo 0, rola dois e fica com o menor.</p>`;
+}
+
+/* ---------- Interface: armas e rituais ---------- */
+function fld(list, it, key, label, ro, {type="text", cls=""} = {}){
+  return `<label class="fl ${cls}">${label}<input ${type==="number" ? 'type="number" data-num' : ""} data-list="${list}" data-id="${it.id}" data-key="${key}" value="${esc(it[key])}" ${ro}></label>`;
+}
+function sel(list, it, key, label, opts, ro){
+  return `<label class="fl">${label}<select data-list="${list}" data-id="${it.id}" data-key="${key}" ${ro}>${opts.map(o => `<option ${o===it[key]?"selected":""}>${o}</option>`).join("")}</select></label>`;
+}
+
+function armaCard(a, ro){
+  const crit = `${num(a.critMargem) < 20 ? a.critMargem + "/" : ""}x${a.critMult}`;
+  return `
+  <div class="item">
+    <div class="ihead"><b>${esc(a.nome)}</b><small>${esc(a.dano)} · crít. ${crit}</small></div>
+    <div class="acts">
+      <button class="main" data-act="atk" data-id="${a.id}">Atacar</button>
+      <button data-act="dmg" data-id="${a.id}">Dano</button>
+      <button data-act="crit" data-id="${a.id}">Crítico</button>
+    </div>
+    <details data-did="${a.id}" ${openIds.has(a.id) ? "open" : ""}>
+      <summary>Editar arma</summary>
+      <div class="grid2">
+        ${fld("armas",a,"nome","Nome",ro,{cls:"full"})}
+        ${fld("armas",a,"tipo","Tipo (ex.: Corpo a corpo)",ro)}
+        ${sel("armas",a,"pericia","Perícia de ataque",SKILLS.map(s=>s[0]),ro)}
+        ${fld("armas",a,"dano","Dano (ex.: 1d8+2)",ro)}
+        ${fld("armas",a,"tipoDano","Tipo de dano",ro)}
+        ${fld("armas",a,"critMargem","Margem de crítico",ro,{type:"number"})}
+        ${fld("armas",a,"critMult","Multiplicador",ro,{type:"number"})}
+        ${fld("armas",a,"alcance","Alcance",ro,{cls:"full"})}
+        ${fld("armas",a,"notas","Notas",ro,{cls:"full"})}
+      </div>
+      <b>Melhorias</b> <span class="hint">(ataque, dano extra)</span>
+      ${(a.melhorias||[]).map(m => `
+        <div class="mel">
+          <input type="checkbox" data-list="armas" data-id="${a.id}" data-mid="${m.id}" data-key="ativa" ${m.ativa?"checked":""} ${ro} aria-label="Ativa">
+          <input data-list="armas" data-id="${a.id}" data-mid="${m.id}" data-key="nome" value="${esc(m.nome)}" ${ro} aria-label="Nome da melhoria">
+          <input type="number" data-num data-list="armas" data-id="${a.id}" data-mid="${m.id}" data-key="bonusAtq" value="${m.bonusAtq}" ${ro} aria-label="Bônus de ataque" title="Bônus de ataque">
+          <input data-list="armas" data-id="${a.id}" data-mid="${m.id}" data-key="danoExtra" value="${esc(m.danoExtra)}" placeholder="+1d6" ${ro} aria-label="Dano extra">
+          <button data-act="delmel" data-list="armas" data-id="${a.id}" data-mid="${m.id}" ${ro} aria-label="Remover melhoria">✕</button>
+        </div>`).join("")}
+      ${ro ? "" : `<button class="wide" data-act="addmel" data-list="armas" data-id="${a.id}">+ Melhoria</button>
+      <button class="wide danger" data-act="delitem" data-list="armas" data-id="${a.id}">Excluir arma</button>`}
+    </details>
+  </div>`;
+}
+
+function ritualCard(r, ro){
+  const ms = ativas(r).map(m => m.nome);
+  return `
+  <div class="item">
+    <div class="ihead"><b>${esc(r.nome)}</b><small>${esc(r.elemento)} · ${r.circulo}º círculo · ${custoRitual(r)} PE</small></div>
+    ${r.dano || ativas(r).some(m=>m.danoExtra) ? `<small class="hint">Dano: ${esc(juntar(r.dano, ...ativas(r).map(m=>m.danoExtra)))}${ms.length ? " (" + esc(ms.join(", ")) + ")" : ""}</small>` : (ms.length ? `<small class="hint">Ativas: ${esc(ms.join(", "))}</small>` : "")}
+    <div class="acts">
+      <button class="main" data-act="cast" data-id="${r.id}">Conjurar</button>
+      ${r.dano || ativas(r).some(m=>m.danoExtra) ? `<button data-act="rdmg" data-id="${r.id}">Dano</button>` : ""}
+    </div>
+    <details data-did="${r.id}" ${openIds.has(r.id) ? "open" : ""}>
+      <summary>Editar ritual</summary>
+      <div class="grid2">
+        ${fld("rituais",r,"nome","Nome",ro,{cls:"full"})}
+        ${sel("rituais",r,"elemento","Elemento",ELEMENTOS,ro)}
+        ${fld("rituais",r,"circulo","Círculo",ro,{type:"number"})}
+        ${fld("rituais",r,"custo","Custo base (PE)",ro,{type:"number"})}
+        ${fld("rituais",r,"dano","Dano (ex.: 4d6)",ro)}
+        ${fld("rituais",r,"execucao","Execução",ro)}
+        ${fld("rituais",r,"alcance","Alcance",ro)}
+        ${fld("rituais",r,"alvo","Alvo / Área",ro)}
+        ${fld("rituais",r,"duracao","Duração",ro)}
+        ${fld("rituais",r,"resistencia","Resistência",ro,{cls:"full"})}
+        <label class="fl full">Descrição<textarea data-list="rituais" data-id="${r.id}" data-key="descricao" ${ro}>${esc(r.descricao)}</textarea></label>
+      </div>
+      <b>Melhorias</b> <span class="hint">(Discente, Verdadeiro...)</span>
+      ${(r.melhorias||[]).map(m => `
+        <div class="mel rit">
+          <input type="checkbox" data-list="rituais" data-id="${r.id}" data-mid="${m.id}" data-key="ativa" ${m.ativa?"checked":""} ${ro} aria-label="Ativa">
+          <input data-list="rituais" data-id="${r.id}" data-mid="${m.id}" data-key="nome" value="${esc(m.nome)}" ${ro} aria-label="Nome da melhoria">
+          <input type="number" data-num data-list="rituais" data-id="${r.id}" data-mid="${m.id}" data-key="custo" value="${m.custo}" ${ro} aria-label="Custo extra em PE" title="PE extra">
+          <input data-list="rituais" data-id="${r.id}" data-mid="${m.id}" data-key="danoExtra" value="${esc(m.danoExtra)}" placeholder="+2d6" ${ro} aria-label="Dano extra">
+          <button data-act="delmel" data-list="rituais" data-id="${r.id}" data-mid="${m.id}" ${ro} aria-label="Remover melhoria">✕</button>
+          <input class="meldesc" data-list="rituais" data-id="${r.id}" data-mid="${m.id}" data-key="descricao" value="${esc(m.descricao)}" placeholder="O que essa melhoria faz" ${ro}>
+        </div>`).join("")}
+      ${ro ? "" : `<button class="wide" data-act="addmel" data-list="rituais" data-id="${r.id}">+ Melhoria</button>
+      <button class="wide danger" data-act="delitem" data-list="rituais" data-id="${r.id}">Excluir ritual</button>`}
+    </details>
+  </div>`;
+}
+
+function viewArmas(f, ro){
+  return (f.armas.length ? f.armas.map(a => armaCard(a, ro)).join("") : `<div class="empty">Nenhuma arma ainda.</div>`)
+    + (ro ? "" : `<button class="wide" data-act="addarma">+ Adicionar arma</button>`)
+    + `<div class="log" id="log">Marque uma melhoria para ela valer nos ataques e danos.</div>`;
+}
+function viewRituais(f, ro){
+  return `<p class="hint">PE atual: ${f.pe[0]} de ${f.pe[1]}</p>`
+    + (f.rituais.length ? f.rituais.map(r => ritualCard(r, ro)).join("") : `<div class="empty">Nenhum ritual ainda.</div>`)
+    + (ro ? "" : `<button class="wide" data-act="addrit">+ Adicionar ritual</button>`)
+    + `<div class="log" id="log">Conjurar gasta o custo em PE, incluindo melhorias ativas.</div>`;
+}
+
+function render(){
+  renderSelect();
+  const f = fichas[current];
+  if(!f){
+    main.innerHTML = `<div class="empty">Você ainda não tem ficha nesta sala.<br>Toque em <b>Nova ficha</b> para criar a primeira.</div>`;
+    return;
+  }
+  const ro = canEdit(f) ? "" : "disabled";
+  const tabs = `<nav class="tabs">${[["ficha","Ficha"],["armas","Armas"],["rituais","Rituais"]]
+    .map(([k,l]) => `<button data-tab="${k}" class="${tab===k?"on":""}">${l}</button>`).join("")}</nav>`;
+  main.innerHTML = tabs + (tab === "armas" ? viewArmas(f, ro) : tab === "rituais" ? viewRituais(f, ro) : viewFicha(f, ro));
+}
+
+/* ---------- Eventos ---------- */
+main.addEventListener("toggle", e => {
+  const id = e.target.dataset?.did; if(!id) return;
+  e.target.open ? openIds.add(id) : openIds.delete(id);
+}, true);
+
+main.addEventListener("input", e => {
+  const f = fichas[current]; if(!f || !canEdit(f)) return;
+  const t = e.target;
+  if(t.dataset.list){
+    const item = f[t.dataset.list].find(i => i.id === t.dataset.id); if(!item) return;
+    const alvo = t.dataset.mid ? item.melhorias.find(m => m.id === t.dataset.mid) : item;
+    if(!alvo) return;
+    alvo[t.dataset.key] = t.type === "checkbox" ? t.checked : ("num" in t.dataset ? num(t.value) : t.value);
+    scheduleSave(); return;
+  }
+  if(t.dataset.f){
+    const k = t.dataset.f;
+    f[k] = t.type === "number" ? num(t.value) : t.value;
+    if(k === "nome") renderSelect();
+  } else if(t.dataset.attr){ f.attrs[t.dataset.attr] = Math.max(0, num(t.value)); }
+  else if(t.dataset.cur){ f[t.dataset.cur][0] = num(t.value); }
+  else if(t.dataset.max){ f[t.dataset.max][1] = num(t.value); }
+  else if(t.dataset.outros){ (f.pericias[t.dataset.outros] ??= {t:0,o:0}).o = num(t.value); }
+  else return;
+  scheduleSave();
+});
+
+main.addEventListener("change", e => {
+  const f = fichas[current]; if(!f || !canEdit(f)) return;
+  const t = e.target;
+  if(t.dataset.treino){ (f.pericias[t.dataset.treino] ??= {t:0,o:0}).t = num(t.value); scheduleSave(); }
+  else if(t.dataset.cur || t.dataset.max) render();
+  else if(t.dataset.list && (t.dataset.key === "ativa" || t.tagName === "SELECT")) render(); // atualiza custos e resumos
+});
+
+main.addEventListener("click", async e => {
+  const f = fichas[current]; if(!f) return;
+  const t = e.target.closest("button"); if(!t) return;
+  const find = (list, id) => f[list].find(i => i.id === id);
+
+  if(t.dataset.tab){ tab = t.dataset.tab; render(); return; }
+  if(t.dataset.adj){
+    const [k, v] = t.dataset.adj.split(":");
+    f[k][0] = Math.max(0, Math.min(f[k][1] || 999, f[k][0] + num(v)));
+    scheduleSave(); render(); return;
+  }
+  if(t.dataset.rollattr){ rollAttr(f, t.dataset.rollattr, t.dataset.rollattr, 0); return; }
+  if(t.dataset.rollskill){
+    const nome = t.dataset.rollskill, {attr, bonus} = rollPericia(f, nome);
+    rollAttr(f, `${nome} (${attr})`, attr, bonus); return;
+  }
+  if(t.id === "rollf"){ rollFormula(f, $("#formula").value); return; }
+
+  const act = t.dataset.act; if(!act) return;
+  const id = t.dataset.id, list = t.dataset.list;
+  switch(act){
+    case "atk": atacar(f, find("armas", id)); break;
+    case "dmg": danoArma(f, find("armas", id), false); break;
+    case "crit": danoArma(f, find("armas", id), true); break;
+    case "cast": conjurar(f, find("rituais", id)); break;
+    case "rdmg": danoRitual(f, find("rituais", id)); break;
+    case "addarma": { const a = newArma(); f.armas.push(a); openIds.add(a.id); scheduleSave(); render(); break; }
+    case "addrit": { const r = newRitual(); f.rituais.push(r); openIds.add(r.id); scheduleSave(); render(); break; }
+    case "addmel": { find(list, id).melhorias.push(list === "armas" ? newMelArma() : newMelRit()); scheduleSave(); render(); break; }
+    case "delmel": { const it = find(list, id); it.melhorias = it.melhorias.filter(m => m.id !== t.dataset.mid); scheduleSave(); render(); break; }
+    case "delitem":
+      if(confirm("Excluir este item?")){ f[list] = f[list].filter(i => i.id !== id); scheduleSave(); render(); }
+      break;
+    case "export": $("#bk").value = JSON.stringify(f); $("#bk").select(); break;
+    case "import":
+      try{
+        const nova = normalize(JSON.parse($("#bk").value));
+        nova.id = uid(); nova.owner = myId;
+        fichas[nova.id] = nova; current = nova.id;
+        await saveNow(); render();
+      }catch{ OBR.notification.show("Código inválido. Cole o texto exportado inteiro.", "ERROR"); }
+      break;
+    case "delficha":
+      if(confirm(`Excluir a ficha de ${f.nome}?`)){
+        await removeFicha(f.id); delete fichas[f.id];
+        current = visible()[0]?.id ?? null; render();
+      }
+      break;
+  }
+});
+
+$("#sel").addEventListener("change", e => { current = e.target.value; render(); });
+$("#new").addEventListener("click", async () => {
+  const f = blank(); fichas[f.id] = f; current = f.id; tab = "ficha";
+  await saveNow(); render();
+});
+
+/* ---------- Início ---------- */
+OBR.onReady(async () => {
+  myId = await OBR.player.getId();
+  role = await OBR.player.getRole();
+  await load();
+  current = visible()[0]?.id ?? null;
+  render();
+
+  OBR.room.onMetadataChange(meta => {
+    const remote = meta[KEY] || {};
+    for(const [id, f] of Object.entries(remote)) if(id !== current) fichas[id] = normalize(f);
+    for(const id of Object.keys(fichas)) if(!remote[id] && id !== current) delete fichas[id];
+    if(!fichas[current]) current = visible()[0]?.id ?? null;
+    renderSelect();
+  });
+  OBR.player.onChange(p => { role = p.role; render(); });
+  OBR.broadcast.onMessage(CHANNEL, ev => OBR.notification.show(ev.data));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "Ficha Ordem Paranormal",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Fichas",
+    "icon": "icon.svg",
+    "popover": "index.html",
+    "height": 640,
+    "width": 440
+  }
+}
